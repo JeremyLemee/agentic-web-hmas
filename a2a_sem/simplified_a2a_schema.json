@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "jsonrpc": { "type": "string", "const": "2.0" },
+    "id": { "type": ["string", "number", "null"] },
+    "method": { "type": "string", "const": "message/send" },
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "message": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "messageId": { "type": "string" },
+            "role": { "type": "string", "const": "user" },
+            "parts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "text": { "type": "string" }
+                },
+                "required": ["text"]
+              }
+            }
+          },
+          "required": ["messageId", "role", "parts"]
+        }
+      },
+      "required": ["message"]
+    }
+  },
+  "required": ["jsonrpc", "id", "method", "params"]
+}

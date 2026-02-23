@@ -1,0 +1,1 @@
+curl -X POST -H 'Content-Type: text/plain' --data 'move(10)' http://localhost:8086/operation

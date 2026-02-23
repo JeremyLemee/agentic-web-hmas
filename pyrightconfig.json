@@ -1,0 +1,14 @@
+{
+  "include": ["."],
+  "exclude": [
+    ".venv",
+    ".ruff_cache",
+    "wheelhouse",
+    "__pycache__",
+    "mcp_sem/sem_mcp.py",
+    "wot_sem/affordances"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}

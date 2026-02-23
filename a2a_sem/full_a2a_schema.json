@@ -1,0 +1,90 @@
+{
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "jsonrpc": {"type": "string", "const": "2.0"},
+        "id": {"type": ["string", "number", "null"]},
+        "method": {"type": "string", "const": "message/send"},
+        "params": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "message": {"$ref": "#/$defs/Message"},
+                "configuration": {"type": "object"},
+                "metadata": {"type": "object"}
+            },
+            "required": ["message"]
+        }
+    },
+    "required": ["jsonrpc", "id", "method", "params"],
+    "$defs": {
+        "Message": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "messageId": {"type": "string"},
+                "contextId": {"type": "string"},
+                "taskId": {"type": "string"},
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "user",
+                        "agent"
+                    ]
+                },
+                "parts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/$defs/Part"}
+                },
+                "metadata": {"type": "object"},
+                "extensions": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "referenceTaskIds": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["messageId", "role", "parts"]
+        },
+        "Part": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "text": {"type": "string"},
+                "file": {"$ref": "#/$defs/FilePart"},
+                "data": {"$ref": "#/$defs/DataPart"},
+                "metadata": {"type": "object"}
+            },
+            "oneOf": [
+                {"required": ["text"]},
+                {"required": ["file"]},
+                {"required": ["data"]}
+            ]
+        },
+        "FilePart": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "fileWithUri": {"type": "string"},
+                "fileWithBytes": {"type": "string"},
+                "mediaType": {"type": "string"},
+                "name": {"type": "string"}
+            },
+            "oneOf": [
+                {"required": ["fileWithUri"]},
+                {"required": ["fileWithBytes"]}
+            ]
+        },
+        "DataPart": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "data": {}
+            },
+            "required": ["data"]
+        }
+    }
+}
