@@ -70,6 +70,7 @@ LLMS_TO_EVALUATE = [
     LlmConfig(provider="ollama", model="gemma3:270m"),
     LlmConfig(provider="ollama", model="gemma3:1b"),
     LlmConfig(provider="ollama", model="ministral-3:latest"),
+LlmConfig(provider="ollama", model="ministral-3:14b"),
     LlmConfig(provider="openai", model="gpt-4.1-mini"),
     LlmConfig(provider="openai", model="gpt-5-mini-2025-08-07")
 ]

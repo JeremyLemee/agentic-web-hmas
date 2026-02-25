@@ -17,7 +17,7 @@ from urllib.error import URLError
 from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 
-from rdflib import BNode, Graph, RDF, RDFS, URIRef
+from rdflib import BNode, Graph, Literal, RDF, RDFS, URIRef
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
@@ -747,7 +747,7 @@ def _register_signifiers_from_graph(graph: Graph, signifiers: List[URIRef]) -> D
 
 
 def _reset_registered_tools() -> None:
-    keep_tools = {"read_signifiers", "update_profile", "all_signifiers"}
+    keep_tools = {"register_profile", "read_signifiers", "update_profile", "all_signifiers"}
     for tool_name in list(_registered_signifiers.values()):
         if tool_name in keep_tools:
             continue
@@ -766,6 +766,30 @@ def _reset_registered_tools() -> None:
                 mcp.remove_tool(tool_name)
             except Exception:
                 pass
+
+
+@mcp.tool()
+def register_profile(
+    profile_id: Annotated[str, Field(description="Profile identifier to register (e.g., executor).")],
+) -> Dict[str, Any]:
+    """
+    Register a profile with an empty natural-language context.
+    """
+    encoded_profile_id = quote(profile_id, safe="/")
+    profile_uri = URIRef(f"{SEM_BASE_URL}/profile/{encoded_profile_id}")
+    payload_graph = Graph()
+    context_node = BNode()
+    payload_graph.add((profile_uri, HMAS["hasContext"], context_node))
+    payload_graph.add((context_node, RDFS["comment"], Literal("")))
+
+    target = f"{SEM_BASE_URL}/profile/{encoded_profile_id}"
+    return _perform_http_request(
+        target,
+        {},
+        "text/turtle",
+        payload_graph.serialize(format="turtle"),
+        method="PUT",
+    )
 
 
 @mcp.tool()
