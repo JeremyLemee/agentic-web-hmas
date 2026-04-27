@@ -228,8 +228,6 @@ class ProceduralMemory:
             for k, t in self.tools.items():
                 if key == t.name or key == t.description:
                     d[k] = t
-                elif self.llm is not None:
-                    print("TODO")
             for k2, p in self.plans.items():
                 if key == k2:  # TODO: update
                     d[k2] = p
@@ -268,7 +266,7 @@ class ProceduralMemory:
         if isinstance(response, str):
             response_str = response
         elif isinstance(response, AIMessage):
-            response_str = response.text()
+            response_str = response.text
         selected_tool_names = [name.strip() for name in response_str.split(",")]
         return [tool for tool in self.tools.values() if tool.name in selected_tool_names][
             : self.max_tools

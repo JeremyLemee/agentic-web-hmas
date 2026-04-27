@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any
 
 from langchain.chat_models import BaseChatModel
 
@@ -10,7 +11,7 @@ from pydantic import SecretStr
 
 
 def load_llm(provider: str, name: str, temperature: float | None = None) -> BaseChatModel:
-    model_kwargs: dict[str, float] = {}
+    model_kwargs: dict[str, Any] = {}
     if temperature is not None:
         model_kwargs["temperature"] = temperature
 

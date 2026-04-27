@@ -214,3 +214,11 @@ config.json
 API_KEY.txt
 
 gui_logs/
+
+.codex
+
+last_run_executor_agent.txt
+
+last_run.txt
+
+last_run_formalizer_coala_agent.txt

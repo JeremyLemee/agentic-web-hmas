@@ -1,7 +1,7 @@
 [project]
 name = "agentic-web-sem"
 version = "0.1.0"
-description = "A project to implement an SEM for the Agentic Web"
+description = "A project to integrate the Agentic Web with hypermedia Multi-Agent Systems."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -23,6 +23,7 @@ dev = [
     "pyright>=1.1.408",
     "pytest>=9.0.2",
     "ruff>=0.15.0",
+    "pyshacl>=0.25.0",
 ]
 
 [tool.ruff]

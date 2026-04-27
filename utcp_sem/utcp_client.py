@@ -295,6 +295,14 @@ def _load_manual(url: str) -> Any:
         return data
 
 
+def _refresh_manual(url: str) -> dict:
+    manual = _load_manual(url)
+    manual_dict = _manual_to_dict(manual)
+    tools = manual_dict.get("tools") or []
+    print(f"(manual refreshed: {len(tools)} tools)")
+    return manual_dict
+
+
 def _find_tool(manual_dict: dict, tool_name: str) -> Optional[dict]:
     tools = manual_dict.get("tools")
     if not isinstance(tools, list):
@@ -331,16 +339,18 @@ def _print_tool_details(tool: dict) -> None:
     print(json.dumps(tool, indent=2))
 
 
-def _call_tool(tool: dict, args: Dict[str, Any], headers: Dict[str, str], timeout: float) -> None:
+def _call_tool(
+    tool: dict, args: Dict[str, Any], headers: Dict[str, str], timeout: float
+) -> Optional[dict]:
     template = tool.get("tool_call_template") or {}
     if template.get("call_template_type") not in (None, "http"):
         print(f"Unsupported call_template_type: {template.get('call_template_type')}")
-        return
+        return None
 
     url = template.get("url")
     if not url:
         print("Tool has no URL in tool_call_template")
-        return
+        return None
     method = (template.get("http_method") or "POST").upper()
     content_type = template.get("content_type") or "application/json"
 
@@ -368,9 +378,16 @@ def _call_tool(tool: dict, args: Dict[str, Any], headers: Dict[str, str], timeou
 
     status, resp_headers, data = _http_request(method, url, req_headers, body, timeout)
     _print_response(status, resp_headers, data)
+    if not data:
+        return None
+    try:
+        decoded = data.decode("utf-8", errors="replace")
+        return json.loads(decoded)
+    except Exception:
+        return None
 
 
-def repl(manual: Any, headers: Dict[str, str], timeout: float) -> None:
+def repl(manual: Any, manual_url: str, headers: Dict[str, str], timeout: float) -> None:
     manual_dict = _manual_to_dict(manual)
     print(HELP)
     while True:
@@ -427,7 +444,11 @@ def repl(manual: Any, headers: Dict[str, str], timeout: float) -> None:
                 else:
                     json_args = " ".join(rest[1:]) if len(rest) > 1 else ""
                     args = _parse_json_args(json_args)
-                _call_tool(tool, args, headers, timeout)
+                response = _call_tool(tool, args, headers, timeout)
+                if tool_name in {"read_signifiers", "all_signifiers"}:
+                    manual_dict = _refresh_manual(manual_url)
+                elif isinstance(response, dict) and "available_tools" in response:
+                    manual_dict = _refresh_manual(manual_url)
                 continue
 
             print(f"Unknown command: {cmd} (type 'help')")
@@ -465,7 +486,7 @@ def main() -> int:
         headers[k.strip()] = v.strip()
 
     manual = _load_manual(args.url)
-    repl(manual, headers, args.timeout)
+    repl(manual, args.url, headers, args.timeout)
     return 0
 
 

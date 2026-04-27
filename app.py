@@ -91,7 +91,6 @@ def register_mcp_server(instance_name: str, mcp_url: str) -> str | None:
     except Exception as exc:
         print(f"Skipping MCP server registration for {instance_name} ({mcp_url}): {exc}")
         return None
-    print(mcp_profile.graph)
     bind_common_prefixes(mcp_profile.graph)
     artifact_uri = str(mcp_profile.uri)
     artifacts[artifact_uri] = mcp_profile.graph
@@ -107,7 +106,6 @@ def register_a2a_agent(instance_name: str, a2a_url: str) -> str | None:
     except Exception as exc:
         print(f"Skipping A2A agent registration for {instance_name} ({a2a_url}): {exc}")
         return None
-    print(a2a_profile.graph)
     bind_common_prefixes(a2a_profile.graph)
     artifact_uri = str(a2a_profile.uri)
     artifacts[artifact_uri] = a2a_profile.graph
@@ -123,7 +121,6 @@ def register_utcp_manual(instance_name: str, utcp_manual_url: str) -> str | None
     except Exception as exc:
         print(f"Skipping UTCP manual registration for {instance_name} ({utcp_manual_url}): {exc}")
         return None
-    print(utcp_profile.graph)
     bind_common_prefixes(utcp_profile.graph)
     artifact_uri = str(utcp_profile.uri)
     artifacts[artifact_uri] = utcp_profile.graph
@@ -139,7 +136,6 @@ def register_wot_td(instance_name: str, td_url: str) -> str | None:
     except Exception as exc:
         print(f"Skipping TD registration for {instance_name} ({td_url}): {exc}")
         return None
-    print(td_profile.graph)
     bind_common_prefixes(td_profile.graph)
     artifact_uri = str(td_profile.uri)
     artifacts[artifact_uri] = td_profile.graph
@@ -188,7 +184,7 @@ def load_sem_config() -> dict[str, Any]:
     raise RuntimeError("unreachable")
 
 
-def get_signifiers(env_graph: Graph):  # TODO: complete
+def get_signifiers(env_graph: Graph):
     combined_graph = Graph()
     combined_graph += env_graph
     for artifact_graph in artifacts.values():
@@ -242,12 +238,11 @@ def signifier_filter(signifier: Signifier, profile: Profile | Graph, llm: BaseCh
         f"Profile context: {profile_context}\n"
         f"Signifier context: {signifier_context}"
     )
-    print("prompt: ", prompt)
 
     llm_response = llm.invoke(prompt)
-    print("LLM response: ", llm_response)
     content = _strip_leading_think_block(_extract_llm_text(llm_response))
-    return str(content).strip().lower() == "true"
+    return not (str(content).strip().lower() == "false")
+
 
 
 def add_to_graph(graph: Graph, signifier: Signifier):
@@ -292,7 +287,7 @@ def _recommended_ability_types_match_profile(signifier: Signifier, profile: Grap
 
 
 def selection(profile: Graph, env_graph: Graph) -> Graph:
-    """Placeholder for the future selection logic."""
+    """Select and return signifiers matching the profile using semantic filtering."""
     config = load_sem_config()
     provider = config["sem"]["provider"]
     name = config["sem"]["model"]
@@ -483,9 +478,7 @@ def create_app(config_path: str = DEFAULT_APP_CONFIG) -> Flask:
             profile_graph.parse(profile_url)
         except Exception as exc:
             abort(400, f"Unable to parse profile at '{profile_url}': {exc}")
-        print("before computing result graph")
         result_graph = selection(profile_graph, envKG)
-        print("result graph: ", result_graph.serialize(format="turtle"))
         mimetype, rdf_format = _preferred_serialization()
         bind_common_prefixes(result_graph)
         serialized = result_graph.serialize(format=rdf_format)
@@ -512,7 +505,6 @@ def create_app(config_path: str = DEFAULT_APP_CONFIG) -> Flask:
         profile_graph = profiles.get(profile_id)
         if profile_graph is None:
             abort(404, "Profile not found")
-        assert profile_graph is not None
 
         mimetype, rdf_format = _preferred_serialization()
         bind_common_prefixes(profile_graph)
@@ -583,7 +575,6 @@ def create_app(config_path: str = DEFAULT_APP_CONFIG) -> Flask:
         artifact_graph = artifacts.get(artifact_uri)
         if artifact_graph is None:
             abort(404, "Artifact not found")
-        assert artifact_graph is not None
 
         mimetype, rdf_format = _preferred_serialization()
         bind_common_prefixes(artifact_graph)

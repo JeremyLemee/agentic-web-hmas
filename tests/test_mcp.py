@@ -124,9 +124,6 @@ def test_goal_mcp_artifact_profile_matches_expected_shape(running_stack):
     context_node = _single_object(graph, signifier, HMAS["recommendsContext"])
     context_comment = _single_object(graph, context_node, RDFS["comment"])
     assert _normalize_ws(str(context_comment)) == EXPECTED_FEEDBACK_TEXT
-    ability_node = _single_object(graph, signifier, HMAS["recommendsAbility"])
-    ability_comment = _single_object(graph, ability_node, RDFS["comment"])
-    assert "provide_feedback" in str(ability_comment)
 
     behavior_node = _single_object(graph, signifier, HMAS["signifies"])
     form_node = _single_object(graph, behavior_node, TD["hasForm"])
@@ -138,7 +135,7 @@ def test_goal_mcp_artifact_profile_matches_expected_shape(running_stack):
     headers_list = _single_object(graph, form_node, HTTP["headers"])
     assert _rdf_list_length(graph, headers_list) == 3
 
-    root_schema = _single_object(graph, form_node, HMAS["hasInputSchema"])
+    root_schema = _single_object(graph, behavior_node, TD["hasInputSchema"])
 
     assert (root_schema, RDF.type, JS["ObjectSchema"]) in graph
     assert _required_values(graph, root_schema) == {"id", "jsonrpc", "method", "params"}

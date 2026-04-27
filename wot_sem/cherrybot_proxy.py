@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 import hashlib
@@ -5,7 +6,7 @@ import re
 import threading
 import json
 from html import escape
-from math import atan, atan2, cos, degrees, radians, sin, sqrt
+from math import atan, cos, degrees, radians, sin, sqrt
 from urllib.parse import urljoin
 
 import requests
@@ -17,8 +18,9 @@ from mcp.server.fastmcp import FastMCP
 # ----------------------------
 # Configuration (env vars)
 # ----------------------------
-#ROBOT_BASE_URL = "https://api.interactions.ics.unisg.ch/cherrybot2"
-ROBOT_BASE_URL = "http://localhost:8099"
+SIMULATION_ROBOT_BASE_URL = "http://localhost:8099"
+REAL_ROBOT_BASE_URL = "https://api.interactions.ics.unisg.ch/cherrybot2"
+ROBOT_BASE_URL = SIMULATION_ROBOT_BASE_URL
 # Operator registration info
 ROBOT_OPERATOR_USERNAME = "cherrybot-proxy"
 OPERATOR_TTL_SECONDS = float(os.environ.get("OPERATOR_TTL_SECONDS", str(14 * 60)))
@@ -113,8 +115,7 @@ def _rotate_target(
 ) -> dict:
     angle = radians(a)
     x_new, y_new = _rotate_compute(current_x, current_y, angle)
-    # Align yaw with the gripper orientation after rotation (positive is CCW).
-    new_yaw = _compute_new_yaw(degrees(atan2(y_new, x_new)))
+    new_yaw = _compute_new_yaw(current_yaw + a)
     return {
         "x": x_new,
         "y": y_new,
@@ -225,7 +226,6 @@ def _proxy_td_graph(proxy_base: str) -> Graph:
     """
     td_turtle = f"""@prefix td: <https://www.w3.org/2019/wot/td#> .
 @prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
-@prefix cherrybot: <https://interactions.ics.unisg.ch/cherrybot#> .
 @prefix hmas: <https://purl.org/hmas/> .
 @prefix js: <https://www.w3.org/2019/wot/json-schema#> .
 @prefix htv: <http://www.w3.org/2011/http#> .
@@ -233,7 +233,7 @@ def _proxy_td_graph(proxy_base: str) -> Graph:
 <http://localhost:8086/cherrybot> a td:Thing, hmas:Artifact;
   td:title "cherryBot";
   td:hasBase <{proxy_base}/>;
-  td:hasActionAffordance [ a td:ActionAffordance, cherrybot:Operation;
+  td:hasActionAffordance [ a td:ActionAffordance;
       td:name "operation";
       td:description "Perform a move(d) or rotate(a) operation. Request body must be plain text (MIME type text/plain, no JSON), of the form operation_name(param) e.g. move(1) or rotate(1)";
       td:hasForm [
@@ -244,7 +244,7 @@ def _proxy_td_graph(proxy_base: str) -> Graph:
         ];
       td:hasInputSchema [ a js:StringSchema ]
     ];
-  td:hasActionAffordance [ a td:ActionAffordance, cherrybot:Operation;
+  td:hasActionAffordance [ a td:ActionAffordance;
       td:name "initialize";
       td:description "Initialize the robot to a ready state.";
       td:hasForm [
@@ -747,7 +747,20 @@ def health():
     return {"status": "ok"}
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Expose a WoT/UTCP proxy for the Cherrybot.")
+    parser.add_argument(
+        "--real",
+        action="store_true",
+        help="Connect to the real Cherrybot API instead of the local simulation.",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = _parse_args()
+    ROBOT_BASE_URL = REAL_ROBOT_BASE_URL if args.real else SIMULATION_ROBOT_BASE_URL
+
     # Run the HTTP proxy and MCP server in the same process.
     proxy_thread = threading.Thread(
         target=app.run,

@@ -1,6 +1,6 @@
-# Agentic Web SEM
+# Agentic Web hMAS
 
-The project was coded with the help of OpenAI Codex.
+The project was coded with the help of OpenAI Codex and Claude Code.
 
 ## The Signifier Exposure Mechanism (SEM)
 
@@ -40,11 +40,15 @@ The code for the executor agent is available [`here`](llm_agent/executor_agent.p
 
 ## Run
 
-Set the [`OpenAI API key`](API_KEY.txt).
+Set the [`OpenAI API key`](API_KEY.txt) if an OpenAI model is used Otherwise, local Ollama models are also supported.
 
-Use ```./run.sh``` to run the environment with UTCP manual being used to register the robot proxy.
+Use ```./run.sh``` to run the environment with UTCP manual being used to register the robot proxy, a simulation of the robot is used, and the goal "Rotate the robot by 12 degrees".
 
-Use ```./wot_run.sh``` to run the environment with UTCP manual being used to register the robot proxy.
+Use ```./wot_run.sh``` to run the environment with the WoT TD being used to register the robot proxy, a simulation of the robot is used, and the goal "Move the robot by 10 centimeters".
+
+Use ```./run_real.sh``` to run the environment with UTCP manual being used to register the robot proxy, the real robot is used,  and the goal "Rotate the robot by 12 degrees".
+
+Use ```./wot_run_real.sh``` to run the environment with the WoT TD being used to register the robot proxy, the real robot is used, and the goal "Move the robot by 10 centimeters".
 
 Use ```uv run llm_agent/executor_agent.py``` to run the executor agent
 
@@ -52,4 +56,6 @@ Use ```uv run llm_agent/executor_agent.py``` to run the executor agent
 ## Evaluation
 
 The script [`evaluation.py`](evaluation.py) performs the evaluation. The results are presented in the file [`results.txt`](results.txt).
+
+The script [`agent_evaluation.py`](agent_evaluation.py).) performs the evaluation. The results are presented in the file [`agent_results.txt`](agent_results.txt).).
 

@@ -13,7 +13,8 @@ if str(ROOT) not in sys.path:
 from sem_profile import Profile
 from urllib.request import Request, urlopen
 
-from rdflib import URIRef, Graph, Namespace, BNode, Literal, RDFS
+from pyshacl import validate
+from rdflib import URIRef, Graph, Namespace, BNode, Literal, RDFS, RDF
 
 from signifier import Signifier
 from utils import (
@@ -30,6 +31,81 @@ HMAS = Namespace("https://purl.org/hmas/")
 HCTL = Namespace("https://www.w3.org/2019/wot/hypermedia#")
 HTTP = Namespace("http://www.w3.org/2011/http#")
 TD = Namespace("https://www.w3.org/2019/wot/td#")
+
+SIGNIFIER_SHACL_TURTLE = """
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://example.com/#> .
+@prefix hmas: <https://purl.org/hmas/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix http: <http://www.w3.org/2011/http#> .
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+
+ex:SignifierShape a sh:NodeShape ;
+    sh:targetClass hmas:Signifier ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [ sh:path hmas:recommendsAbility ] ;
+    sh:property [
+        sh:path hmas:recommendsContext ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:property [
+            sh:path rdfs:comment ;
+            sh:minCount 1 ;
+            sh:maxCount 1 ;
+        ] ;
+    ] ;
+    sh:property [
+        sh:path hmas:signifies ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:node ex:AffordanceShape ;
+    ] .
+
+ex:AffordanceShape a sh:NodeShape ;
+    sh:targetClass td:InteractionAffordance ;
+    sh:property [
+        sh:path td:hasForm ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:node ex:FormShape
+    ] ;
+    sh:property [
+        sh:path td:hasInputSchema ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] .
+
+ex:FormShape a sh:NodeShape ;
+    sh:property [
+        sh:path http:methodName ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path hctl:hasTarget ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path hctl:forContentType ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path http:headers ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] .
+"""
+
+_SIGNIFIER_SHACL_GRAPH: Graph | None = None
 
 
 def get_td_from_url(td_url):
@@ -60,6 +136,26 @@ def _build_signifier_label(instance_name: str, affordance_name: str | None, fall
     return f"{instance_name}_{suffix}"
 
 
+def _get_signifier_shacl_graph() -> Graph:
+    global _SIGNIFIER_SHACL_GRAPH
+    if _SIGNIFIER_SHACL_GRAPH is None:
+        _SIGNIFIER_SHACL_GRAPH = Graph()
+        _SIGNIFIER_SHACL_GRAPH.parse(data=SIGNIFIER_SHACL_TURTLE, format="turtle")
+    return _SIGNIFIER_SHACL_GRAPH
+
+
+def _signifier_conforms_to_shape(signifier: Signifier) -> bool:
+    conforms, _, report_text = validate(
+        signifier.graph,
+        shacl_graph=_get_signifier_shacl_graph(),
+        allow_infos=False,
+        allow_warnings=False,
+    )
+    if not conforms:
+        print(f"Skipping invalid signifier {signifier.uri}: {report_text}")
+    return conforms
+
+
 def _create_signifier_from_affordance(
     affordance: ActionAffordance | PropertyAffordance | EventAffordance,
     instance_name: str,
@@ -80,6 +176,7 @@ def _create_signifier_from_affordance(
         s.add_nl_context(nl_context)
 
     behavior_id = s.create_behavior()
+    s.graph.add((behavior_id, RDF.type, TD["InteractionAffordance"]))
 
     form_def: Form | None = affordance.forms[0] if affordance.forms else None
     if form_def is None:
@@ -140,9 +237,15 @@ def create_profile_from_td(td_url: str, instance_name: str):
     profile.graph.add((profile.uri, RDFS["label"], Literal(instance_name)))
     td = get_td_from_url(td_url)
     for a in td.actions:
-        profile.exposes_signifier(create_signifier_from_action(a, instance_name))
+        signifier = create_signifier_from_action(a, instance_name)
+        if _signifier_conforms_to_shape(signifier):
+            profile.exposes_signifier(signifier)
     for p in td.properties:
-        profile.exposes_signifier(create_signifier_from_property(p, instance_name))
+        signifier = create_signifier_from_property(p, instance_name)
+        if _signifier_conforms_to_shape(signifier):
+            profile.exposes_signifier(signifier)
     for e in td.events:
-        profile.exposes_signifier(create_signifier_from_event(e, instance_name))
+        signifier = create_signifier_from_event(e, instance_name)
+        if _signifier_conforms_to_shape(signifier):
+            profile.exposes_signifier(signifier)
     return profile

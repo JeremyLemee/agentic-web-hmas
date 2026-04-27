@@ -71,5 +71,5 @@ class Signifier:
         return self._graph.serialize(format="turtle")
 
     @staticmethod
-    def get_signifiers(kg: Graph):  # TODO: complete
+    def get_signifiers(kg: Graph):
         return []

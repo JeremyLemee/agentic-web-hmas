@@ -36,7 +36,6 @@ class GoalCase:
 
 SERVER_COMMANDS = [
     ("cherrybot_simu", 5, ["uv", "run", "wot_sem/cherrybot_simulation.py"]),
-    ("example_mcp", 2, ["uv", "run", "mcp_sem/example_mcp.py"]),
     ("formalizer_coala", 2, ["uv", "run", "a2a_sem/formalizer/formalizer_coala.py"]),
     ("goal_mcp", 2, ["uv", "run", "mcp_sem/goal_mcp.py"]),
     ("cherrybot_proxy", 10, ["uv", "run", "wot_sem/cherrybot_proxy.py"]),

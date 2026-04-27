@@ -130,7 +130,7 @@ def current_goal() -> str:
 
 @mcp.tool()
 def provide_feedback(achieved: Annotated[bool, Field(description="Whether the goal has been achieved")], feedback: Annotated[str, Field(description="The feedback to provide")]) -> dict:
-    """Provide feedback for the current goal."""
+    """Provide feedback for the current goal. If achieved is true, the current goal is cleared."""
     _set_feedback(bool(achieved), (feedback or "").strip())
     return {
         "ok": True,

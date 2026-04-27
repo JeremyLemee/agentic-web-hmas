@@ -202,7 +202,7 @@ def write_markdown_results(output_path: Path, tasks: list[str], runs: int, resul
     lines.append(f"- Generated (UTC): `{now}`")
     lines.append(f"- Runs per task/interface: `{runs}`")
     lines.append(f"- Tasks: `{tasks}`")
-    lines.append(f"- Agent: `llm_agent/executor_agent.py`")
+    lines.append("- Agent: `llm_agent/executor_agent.py`")
     lines.append("")
 
     for interface_name, _stack_script in STACKS:

@@ -6,8 +6,6 @@ PIDS=()
 cleanup() {
   echo
   echo "Stopping all servers..."
-  # Kill the whole process group (this script + children)
-  # (Common, battle-tested pattern)
   trap - SIGTERM
   kill -- -$$ 2>/dev/null || true
 }
@@ -47,13 +45,11 @@ set_goal_mcp_goal() {
   return 1
 }
 
-# Start servers in the requested order, with sane delays
-start_bg "cherrybot_simu"     5  wot_sem/cherrybot_simulation.py
 start_bg "formalizer_coala"   2  a2a_sem/formalizer/formalizer_coala.py
-start_bg "goal_mcp"         2  mcp_sem/goal_mcp.py
-set_goal_mcp_goal "Move the robot by 10 centimeters"
-start_bg "cherrybot_proxy"   10  wot_sem/cherrybot_proxy.py
-start_bg "app"                2  app.py --app-config config_app2.json
+start_bg "goal_mcp"           2  mcp_sem/goal_mcp.py
+set_goal_mcp_goal "Rotate the robot by 12 degrees"
+start_bg "cherrybot_proxy"   10  wot_sem/cherrybot_proxy.py --real
+start_bg "app"                2  app.py
 start_bg "sem_mcp"            0  mcp_sem/sem_mcp.py
 
 echo

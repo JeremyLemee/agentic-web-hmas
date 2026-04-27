@@ -81,7 +81,6 @@ class Coala:
         if initial_memory is None:
             initial_memory = {}
         self.llm = llm
-        print("Initial prompt: ", initial_prompt)
         self.initial_prompt = initial_prompt
         self.working_memory = _WindowedChatMemory(memory_key="chat_history", k=10)
         self.procedural_memory = ProceduralMemory(llm)
@@ -168,8 +167,7 @@ class Coala:
         if observations:
             self._record_percept(observations, source="observation")
 
-    def retrieve_episodic_memory(self, query):  # TODO: update
-        # results = self.episodic_memory.similarity_search(query, k=3)
+    def retrieve_episodic_memory(self, query):
         results = []
         for res in results:
             self.working_memory.chat_memory.add_message(AIMessage(content=res.page_content))
@@ -177,7 +175,6 @@ class Coala:
     def retrieve_procedural_memory(self, query):
         tools = self.procedural_memory.retrieve_tools(query)
         for tool in tools:
-            print("tool type: ", type(tool))
             tool_description = self._format_tool_description(tool)
             self.working_memory.chat_memory.add_message(
                 AIMessage(content=f"Tool available: {tool.name} - {tool_description}")
@@ -216,7 +213,6 @@ class Coala:
             self.cycle_output_tokens += output_tokens
 
     def decide(self, thought):
-        print("Deciding phase")
         # Retrieve the working memory content (e.g., chat history)
         memory_context = self.working_memory.load_memory_variables({})
         chat_history = memory_context.get("chat_history", "")
@@ -252,16 +248,13 @@ class Coala:
         if isinstance(decision, str):
             decision_str = decision
         elif isinstance(decision, AIMessage):
-            print("is decision AI message")
             ai_message: AIMessage = decision
             self._accumulate_usage(ai_message)
-            decision_str = decision.text()
-        print(f"Decision made: {decision_str}")
+            decision_str = decision.text
         self._record_decision(decision_str)
         return self.extract_reply(decision_str)
 
     def think(self):
-        print("Thinking phase")
         # Retrieve the working memory content (e.g., chat history)
         memory_context = self.working_memory.load_memory_variables({})
         chat_history = memory_context.get("chat_history", "")
@@ -271,7 +264,6 @@ class Coala:
         tools_description = "\n".join(
             [f"- {self._format_tool_description(tool)}" for tool in available_tools]
         )
-        print("Tool descriptions: ", tools_description)
         # Create a decision prompt that includes the initial prompt, working memory, and tools
         think_prompt = (
             f"Initial Goal and Context:\n{self.initial_prompt}\n\n"
@@ -290,13 +282,11 @@ class Coala:
         if isinstance(thought, str):
             thought_str = thought
         elif isinstance(thought, AIMessage):
-            print("is think AI message")
             ai_message: AIMessage = thought
             self._accumulate_usage(ai_message)
-            thought_str = thought.text()
+            thought_str = thought.text
 
         self.working_memory.chat_memory.add_ai_message(thought_str)
-        print(f"Thought made: {thought}")
         return thought
 
     async def execute_decision(self, d):
@@ -308,7 +298,6 @@ class Coala:
                     raise ValueError("Each decision must be a JSON object.")
                 await self._execute_single_decision(decision)
         except Exception as e:
-            print(f"No valid JSON for {d} with type: {type(d)}")
             self._record_action("invalid_json", {"raw": d})
             self._record_action_output(error=str(e))
             self._record_decision({"error": "invalid_json", "raw": d, "exception": str(e)})
@@ -332,20 +321,12 @@ class Coala:
         if action_input is None:
             action_input = {k: v for k, v in decision.items() if k != "tool"}
         self._record_action(tool_name, action_input)
-        print("tool name: ", tool_name)
         self._record_decision(decision)
         if tool_name == "noop":
-            print("No operation needed at this time.")
             self.working_memory.chat_memory.add_ai_message("Decided to take no action at this time.")
             self._record_action_output("Decided to take no action at this time.")
             return
         if tool_name == "permanent_memory":
-            print(
-                "Update permanent memory field: ",
-                decision["field"],
-                " with value: ",
-                decision["value"],
-            )
             self.data[decision["field"]] = decision["value"]
             self.working_memory.chat_memory.add_ai_message(
                 f"Updated permanent memory field '{decision['field']}' to '{decision['value']}'"
@@ -353,12 +334,6 @@ class Coala:
             self._record_action_output(f"Updated permanent memory field '{decision['field']}'")
             return
         if tool_name == "episodic_memory":
-            print(
-                "Update permanent memory field: ",
-                decision["field"],
-                " with value: ",
-                decision["value"],
-            )
             self.data[decision["field"]] = decision["value"]
             self.working_memory.chat_memory.add_ai_message(
                 f"Updated permanent memory field '{decision['field']}' to '{decision['value']}'"
@@ -367,20 +342,15 @@ class Coala:
             return
         if tool_name == "stop":
             self.stop = True
-            print("Total input tokens: ", self.total_input_tokens)
-            print("Total output tokens: ", self.total_output_tokens)
             stop_time = time.time()
             total_time = stop_time - self.start_time
-            print("total time: ", total_time)
             self._record_action_output("Agent stopped.")
             return
         if tool_name == "remember":
             # self.episodic_memory.add_texts([decision["memory"]])
             self._record_action_output("Remember action acknowledged.")
             return
-        print("before looking for tools")
         tool = self.procedural_memory.get_tool(tool_name)
-        print("tool found")
         if tool:
             self._record_action_tool_description(tool)
             try:
@@ -389,7 +359,6 @@ class Coala:
                 if isinstance(tool_input, dict):
                     tool_input = self._normalize_tool_input(tool_name, tool, tool_input)
                     if not tool_input:
-                        print("Invoke tool without params")
                         result = await asyncio.wait_for(
                             tool.ainvoke({}),
                             timeout=self.tool_timeout_seconds,
@@ -399,10 +368,8 @@ class Coala:
                             tool.ainvoke(tool_input),
                             timeout=self.tool_timeout_seconds,
                         )
-                    print(f"Executed {tool_name}, result: {result}")
                     self._record_action_output(result)
                 else:
-                    print("tool input could not be used.")
                     self._record_action_output("Tool input could not be used.")
                 percept = (
                     "Tool used: "
@@ -412,21 +379,17 @@ class Coala:
                     + ". Tool result: "
                     + str(result)
                 )
-                print("new percept: " + percept)
                 self.sensor.add_percept(percept)
                 self._record_percept(percept, source="tool")
                 self.working_memory.chat_memory.add_ai_message(percept)
             except asyncio.TimeoutError:
                 message = f"Tool '{tool_name}' timed out after {self.tool_timeout_seconds}s"
-                print(message)
                 self._record_action_output(error=message)
                 self.working_memory.chat_memory.add_ai_message(message)
             except Exception as e:
-                print(f"Tool execution failed: {e}")
                 self._record_action_output(error=str(e))
                 self.working_memory.chat_memory.add_ai_message(f"Tool execution failed: {str(e)}")
         else:
-            print(f"No tool named '{tool_name}' found. Executing default fallback.")
             self._record_action_output(error=f"Could not find tool '{tool_name}'.")
             self.working_memory.chat_memory.add_ai_message(f"Could not find tool '{tool_name}'.")
 
@@ -484,11 +447,8 @@ class Coala:
         self.clean_memory()
         self._finalize_cycle_gui_state()
         self._update_last_run_file_from_cycle()
-        print("cycle input tokens: ", self.cycle_input_tokens)
-        print("cycle output tokens: ", self.cycle_output_tokens)
         end_time = time.time()
         cycle_time = end_time - start_time
-        print("cycle time: ", cycle_time)
 
     async def start(self):
         self._ensure_gui()

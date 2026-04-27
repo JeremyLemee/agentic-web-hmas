@@ -1,42 +1,5 @@
 {
-  "profiles": [
-    {
-      "id": "initial",
-      "context": "The agent wants to add two numbers: 3 and 7."
-    },
-    {
-      "id": "initial_mcp_resource",
-      "context": "The agent wants to learn about the Model Context Protocol (MCP)"
-    },
-    {
-      "id": "initial_a2a",
-      "context": "the agent wants to be greeted"
-    },
-    {
-      "id": "formalize",
-      "context": "The agents wants to formalize the goal"
-    },
-    {
-      "id": "initial_utcp",
-      "context": "The agent wants to multiply 3 and 7"
-    },
-    {
-      "id": "initial_wot",
-      "context": "The agents wants to set the TCP target"
-    },
-    {
-      "id": "goal",
-      "context": "The agent wants to read the user goal"
-    },
-    {
-      "id": "executor",
-      "context": ""
-    },
-    {
-      "id": "evaluation",
-      "context": ""
-    }
-  ],
+  "profiles": [],
   "artifacts": [
     {
       "kind": "mcp",
